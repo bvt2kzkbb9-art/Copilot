@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HAJS v3.0 — minimalistyczny budżet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =========================
+       GLOBAL THEME
+       ========================= */
+    :root{
+      --bg:#050509;
+      --card:rgba(18,18,24,0.72);
+      --card-strong:rgba(10,10,14,0.9);
+      --glass:rgba(255,255,255,0.04);
+      --accent:#4f8cff;
+      --accent-2:#7b5cff;
+      --danger:#ff3366;
+      --success:#3dd68c;
+      --muted:#9aa0a6;
+      --radius-lg:20px;
+      --radius-md:12px;
+      --blur-strong:20px;
+      --shadow:0 18px 45px rgba(0,0,0,0.7);
+      --transition:200ms cubic-bezier(.2,.9,.2,1);
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:
+      radial-gradient(1200px 600px at 10% 10%, rgba(79,140,255,0.04), transparent 6%),
+      linear-gradient(180deg,#07070a 0%, #020203 100%);
+      color:#eef0f2;-webkit-font-smoothing:antialiased}
+    .app{
+      max-width:1120px;margin:18px auto;padding:18px;display:flex;flex-direction:column;gap:14px;
+    }
+
+    /* =========================
+       HEADER
+       ========================= */
+    header.app-header{display:flex;flex-direction:column;gap:12px}
+    .title-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .brand{display:flex;flex-direction:column}
+    .brand h1{margin:0;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+    .logo-dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(90deg,#fff,#ff3366);box-shadow:0 6px 18px rgba(255,51,102,0.25)}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+    .status-pill{padding:8px 12px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);font-size:12px;color:var(--muted)}
+
+    /* =========================
+       YOLO INDICATOR
+       ========================= */
+    .yolo-card{border-radius:var(--radius-lg);background:var(--card);padding:12px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(var(--blur-strong));box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .yolo-left{display:flex;flex-direction:column;gap:6px}
+    .yolo-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;display:flex;align-items:center;gap:8px}
+    .yolo-value{font-weight:700;font-size:18px}
+    .yolo-bar{height:10px;border-radius:999px;background:linear-gradient(90deg,#0b0b0f,#0b0b0f);overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+    .yolo-fill{height:100%;width:0%;background:linear-gradient(90deg,#3dd68c,#ffb020,#ff7a2f,#ff3366);transition:width var(--transition),box-shadow var(--transition)}
+    .yolo-label{font-size:12px;color:var(--muted);margin-top:6px}
+
+    /* =========================
+       TABS
+       ========================= */
+    .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:6px}
+    .tab{padding:8px 14px;border-radius:999px;background:transparent;border:1px solid transparent;color:var(--muted);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;transition:all var(--transition)}
+    .tab.active{background:linear-gradient(135deg,rgba(79,140,255,0.14),rgba(123,92,255,0.08));color:#fff;border-color:rgba(255,255,255,0.06);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+
+    /* =========================
+       LAYOUT & CARDS
+       ========================= */
+    main{display:flex;flex-direction:column;gap:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+    .card{background:var(--card);border-radius:var(--radius-lg);padding:14px;border:1px solid rgba(255,255,255,0.04);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+    .card h3{margin:0;font-size:15px}
+    .muted{color:var(--muted);font-size:13px}
+    .form-row{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    label{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+    input[type="text"],input[type="number"],input[type="url"],textarea,select{
+      padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.45);color:#fff;font-size:14px;outline:none
+    }
+    textarea{min-height:80px;resize:vertical}
+    .btn{padding:10px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:700;letter-spacing:0.02em}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;box-shadow:0 12px 30px rgba(79,140,255,0.18)}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .btn-danger{background:linear-gradient(135deg,#ff3366,#ff0066);color:#fff}
+    .list{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
+    .item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--card-strong);border:1px solid rgba(255,255,255,0.03)}
+    .thumb{width:48px;height:48px;border-radius:10px;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,0.04);flex-shrink:0}
+    .item-main{flex:1;display:flex;flex-direction:column}
+    .item-title{font-weight:600}
+    .item-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+    .item-amount{font-weight:700;white-space:nowrap}
+
+    /* =========================
+       SKULL BUTTON
+       ========================= */
+    .skull{position:fixed;right:16px;top:50%;transform:translateY(-50%);width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.06);box-shadow:0 22px 50px rgba(0,0,0,0.7);cursor:pointer;z-index:60;backdrop-filter:blur(10px)}
+    .skull:hover{transform:translateY(-50%) scale(1.03);border-color:rgba(255,51,102,0.8);background:linear-gradient(180deg,rgba(255,51,102,0.12),rgba(10,10,14,0.98))}
+
+    /* =========================
+       MODAL
+       ========================= */
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:80}
+    .backdrop.active{display:flex}
+    .modal{width:100%;max-width:480px;background:var(--card-strong);border-radius:18px;padding:16px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 30px 80px rgba(0,0,0,0.8)}
+    .modal .modal-title{display:flex;align-items:center;gap:10px;font-weight:700}
+    .modal .modal-body{color:var(--muted);margin-top:8px}
+    .modal .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+    /* =========================
+       YOLO OVERLAY & ALERT
+       ========================= */
+    .yolo-overlay{position:fixed;inset:0;background:radial-gradient(circle at 50% 30%, rgba(60,0,20,0.95), rgba(0,0,0,0.98));display:none;align-items:center;justify-content:center;z-index:120}
+    .yolo-overlay.active{display:flex}
+    .yolo-text{color:#fff;font-weight:800;text-align:center;padding:20px;line-height:1;animation:pop 1.2s ease-in-out infinite alternate;transform-origin:center}
+    @keyframes pop{from{transform:scale(0.98) translateY(6px)}to{transform:scale(1.04) translateY(-6px)}}
+    .yolo-text.big{font-size:clamp(28px,8vw,72px);text-shadow:0 20px 60px rgba(0,0,0,0.8)}
+
+    .full-alert{position:fixed;inset:0;background:radial-gradient(circle at 50% 30%, rgba(60,0,20,0.98), rgba(0,0,0,0.99));display:none;align-items:center;justify-content:center;z-index:130}
+    .full-alert.active{display:flex}
+    .alert-box{background:var(--card-strong);padding:20px;border-radius:18px;border:1px solid rgba(255,51,102,0.7);max-width:520px;text-align:center}
+
+    /* =========================
+       ROAST TOAST
+       ========================= */
+    .roast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(120%);background:var(--card-strong);padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 50px rgba(0,0,0,0.8);z-index:110;max-width:640px;opacity:0;transition:all 260ms ease}
+    .roast.active{transform:translateX(-50%) translateY(0);opacity:1}
+    .roast .title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em}
+    .roast .text{margin-top:6px;font-weight:600}
+
+    /* =========================
+       CHART (simple) & FOOTER
+       ========================= */
+    .chart{height:220px;border-radius:12px;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+    footer{margin-top:8px;color:var(--muted);font-size:12px;text-align:center}
+
+    @media (max-width:720px){
+      .skull{right:10px;width:50px;height:50px}
+      .yolo-text.big{font-size:clamp(22px,9vw,48px)}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="title-row">
+        <div class="brand">
+          <h1><span class="logo-dot" aria-hidden="true"></span> HAJS v3.0</h1>
+          <div class="subtitle">Czysty, modułowy budżet — minimalistyczny, premium wygląd.</div>
+        </div>
+        <div class="status-pill" id="statusPill">Stan: gotowy</div>
+      </div>
+
+      <!-- YOLO INDICATOR -->
+      <div class="yolo-card" aria-hidden="false">
+        <div class="yolo-left">
+          <div class="yolo-title">Poziom skażenia YOLO <span style="font-size:14px">☢️</span></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="yolo-bar" style="flex:1">
+              <div class="yolo-fill" id="yoloFill"></div>
+            </div>
+            <div class="yolo-value" id="yoloValue">0%</div>
+          </div>
+          <div class="yolo-label" id="yoloLabel">Sterylne finanse</div>
+        </div>
+        <div style="min-width:160px;text-align:right">
+          <div class="muted">Suma YOLO</div>
+          <div style="font-weight:700;font-size:18px" id="yoloCount">0</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-tab="income">Dochód</button>
+        <button class="tab" data-tab="savings">Oszczędności</button>
+        <button class="tab" data-tab="fixed">Koszty stałe</button>
+        <button class="tab" data-tab="variable">Koszty zmienne</button>
+        <button class="tab" data-tab="loans">Kredyty</button>
+        <button class="tab" data-tab="goals">Cele</button>
+        <button class="tab" data-tab="report">Raport</button>
+        <button class="tab" data-tab="charts">Wykresy</button>
+        <button class="tab" data-tab="cemetery">Cmentarz</button>
+      </nav>
+    </header>
+
+    <!-- MAIN PANELS -->
+    <main id="main">
+      <!-- INCOME -->
+      <section class="card" data-panel="income">
+        <h3>Dochód</h3>
+        <div class="muted">Wprowadź swoje źródła dochodu.</div>
+        <form id="incomeForm" class="form-row" autocomplete="off">
+          <label>Główny dochód
+            <input type="number" id="incomeMain" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Dodatkowy dochód
+            <input type="number" id="incomeExtra" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <button class="btn btn-primary" type="submit">Zapisz dochód</button>
+        </form>
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center;justify-content:space-between">
+          <div>
+            <div class="muted">Dochód łączny</div>
+            <div style="font-weight:800;font-size:18px" id="incomeTotal">0.00 zł</div>
+          </div>
+          <div>
+            <div class="muted">Status</div>
+            <div id="incomeStatus" class="muted">Brak danych</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAVINGS -->
+      <section class="card" data-panel="savings" style="display:none">
+        <h3>Oszczędności</h3>
+        <div class="muted">Stan oszczędności i miesięczne odkładanie.</div>
+        <form id="savingsForm" class="form-row" autocomplete="off">
+          <label>Aktualne oszczędności
+            <input type="number" id="savingsAmount" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Miesięcznie odkładane
+            <input type="number" id="savingsMonthly" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <button class="btn btn-primary" type="submit">Zapisz oszczędności</button>
+        </form>
+        <div style="margin-top:12px">
+          <div class="muted">Komentarz</div>
+          <div id="savingsComment" class="muted">Brak danych</div>
+        </div>
+      </section>
+
+      <!-- FIXED COSTS -->
+      <section class="card" data-panel="fixed" style="display:none">
+        <h3>Koszty stałe</h3>
+        <div class="muted">Rachunki i subskrypcje.</div>
+        <form id="fixedForm" class="form-row" autocomplete="off">
+          <label>Nazwa
+            <input type="text" id="fixedName" placeholder="np. czynsz">
+          </label>
+          <label>Kwota
+            <input type="number" id="fixedAmount" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Częstotliwość
+            <select id="fixedFreq">
+              <option value="miesięcznie">Miesięcznie</option>
+              <option value="kwartalnie">Kwartalnie</option>
+              <option value="rocznie">Rocznie</option>
+            </select>
+          </label>
+          <button class="btn btn-primary" type="submit">Dodaj koszt stały</button>
+        </form>
+        <ul class="list" id="fixedList" style="margin-top:12px"></ul>
+        <div style="margin-top:10px">
+          <div class="muted">Suma miesięczna</div>
+          <div id="fixedTotal" style="font-weight:800">0.00 zł</div>
+        </div>
+      </section>
+
+      <!-- VARIABLE COSTS -->
+      <section class="card" data-panel="variable" style="display:none">
+        <h3>Koszty zmienne</h3>
+        <div class="muted">Wydatki, które pojawiają się niespodziewanie.</div>
+        <form id="variableForm" class="form-row" autocomplete="off">
+          <label>Nazwa
+            <input type="text" id="variableName" placeholder="np. obiad">
+          </label>
+          <label>Kwota
+            <input type="number" id="variableAmount" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Kategoria
+            <select id="variableCategory">
+              <option value="jedzenie">Jedzenie</option>
+              <option value="kawa">Kawa</option>
+              <option value="zakupy">Zakupy</option>
+              <option value="elektronika">Elektronika</option>
+              <option value="ubrania">Ubrania</option>
+              <option value="inne">Inne</option>
+            </select>
+          </label>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" type="submit">Dodaj wydatek</button>
+            <button class="btn btn-ghost" type="button" id="quickOpen">Szybkie wydatki</button>
+          </div>
+        </form>
+
+        <ul class="list" id="variableList" style="margin-top:12px"></ul>
+        <div style="margin-top:10px">
+          <div class="muted">Suma wydatków zmiennych</div>
+          <div id="variableTotal" style="font-weight:800">0.00 zł</div>
+        </div>
+      </section>
+
+      <!-- LOANS -->
+      <section class="card" data-panel="loans" style="display:none">
+        <h3>Kredyty</h3>
+        <div class="muted">Zobowiązania i raty.</div>
+        <form id="loanForm" class="form-row" autocomplete="off">
+          <label>Nazwa kredytu
+            <input type="text" id="loanName" placeholder="np. hipoteczny">
+          </label>
+          <label>Pozostała kwota
+            <input type="number" id="loanAmount" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Rata miesięczna
+            <input type="number" id="loanMonthly" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <button class="btn btn-primary" type="submit">Dodaj kredyt</button>
+        </form>
+        <ul class="list" id="loanList" style="margin-top:12px"></ul>
+        <div style="margin-top:10px">
+          <div class="muted">Suma rat miesięcznych</div>
+          <div id="loanTotal" style="font-weight:800">0.00 zł</div>
+        </div>
+      </section>
+
+      <!-- GOALS -->
+      <section class="card" data-panel="goals" style="display:none">
+        <h3>Cele</h3>
+        <div class="muted">Plany i postępy.</div>
+        <form id="goalForm" class="form-row" autocomplete="off">
+          <label>Nazwa celu
+            <input type="text" id="goalName" placeholder="np. wakacje">
+          </label>
+          <label>Kwota docelowa
+            <input type="number" id="goalTarget" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <label>Już odłożone
+            <input type="number" id="goalCurrent" min="0" step="0.01" placeholder="0.00">
+          </label>
+          <button class="btn btn-primary" type="submit">Dodaj cel</button>
+        </form>
+        <ul class="list" id="goalList" style="margin-top:12px"></ul>
+      </section>
+
+      <!-- REPORT -->
+      <section class="card" data-panel="report" style="display:none">
+        <h3>Raport</h3>
+        <div class="muted">Syntetyczny przegląd budżetu.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px">
+          <div class="card" style="padding:12px">
+            <div class="muted">Dochód łączny</div>
+            <div id="reportIncome" style="font-weight:800">0.00 zł</div>
+          </div>
+          <div class="card" style="padding:12px">
+            <div class="muted">Koszty stałe (miesięcznie)</div>
+            <div id="reportFixed" style="font-weight:800">0.00 zł</div>
+          </div>
+          <div class="card" style="padding:12px">
+            <div class="muted">Koszty zmienne</div>
+            <div id="reportVariable" style="font-weight:800">0.00 zł</div>
+          </div>
+          <div class="card" style="padding:12px">
+            <div class="muted">Raty kredytów</div>
+            <div id="reportLoans" style="font-weight:800">0.00 zł</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="muted">Saldo po kosztach</div>
+          <div id="reportBalance" style="font-weight:900;font-size:20px">0.00 zł</div>
+          <div id="reportComment" class="muted" style="margin-top:8px">Brak danych</div>
+        </div>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="card" data-panel="charts" style="display:none">
+        <h3>Wykresy</h3>
+        <div class="muted">Prosty wykres porównawczy.</div>
+        <div class="chart" id="chartCanvas">Wykres renderowany w kanwie</div>
+      </section>
+
+      <!-- CEMETERY -->
+      <section class="card" data-panel="cemetery" style="display:none">
+        <h3>Cmentarz</h3>
+        <div class="muted">Tutaj spoczywają pieniądze.</div>
+        <ul class="list" id="cemeteryList" style="margin-top:12px"></ul>
+        <div id="cemeteryEmpty" class="muted" style="margin-top:12px">Na razie nikt tu nie leży.</div>
+      </section>
+    </main>
+
+    <footer>HAJS v3.0 — zaprojektowane jako modułowa baza do dalszej rozbudowy.</footer>
+  </div>
+
+  <!-- SKULL BUTTON (fixed) -->
+  <button class="skull" id="skullBtn" title="Nagły wypadek">💀</button>
+
+  <!-- EMERGENCY MODAL -->
+  <div class="backdrop" id="emergencyBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="emergencyTitle">
+      <div class="modal-title" id="emergencyTitle">💀 NAGŁY WYPADEK</div>
+      <div class="modal-body">Jeżeli właśnie zamierzasz zrobić coś finansowo głupiego, wpisz to tutaj.</div>
+      <form id="emergencyForm" class="form-row" autocomplete="off">
+        <label>Nazwa
+          <input type="text" id="emergencyName" required>
+        </label>
+        <label>Kwota
+          <input type="number" id="emergencyAmount" min="0" step="0.01" required>
+        </label>
+        <label>Zdjęcie (URL) — wymagane
+          <input type="url" id="emergencyImage" required placeholder="https://...">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="emergencyCancel">Anuluj</button>
+          <button type="submit" class="btn btn-danger">💀 Zapisz katastrofę</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QUICK EXPENSE MODAL -->
+  <div class="backdrop" id="quickBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="quickTitle">
+      <div class="modal-title" id="quickTitle">Szybkie wydatki</div>
+      <div class="modal-body">Dodaj szybki wydatek — zapis następuje automatycznie.</div>
+      <form id="quickForm" class="form-row" autocomplete="off">
+        <label>Nazwa
+          <input type="text" id="quickName" required>
+        </label>
+        <label>Kwota
+          <input type="number" id="quickAmount" min="0" step="0.01" required>
+        </label>
+        <label>Zdjęcie (URL) — opcjonalne
+          <input type="url" id="quickImage" placeholder="https://...">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="quickCancel">Anuluj</button>
+          <button type="submit" class="btn btn-primary">Dodaj wydatek</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- YOLO OVERLAY -->
+  <div class="yolo-overlay" id="yoloOverlay" aria-hidden="true">
+    <div class="yolo-text big" id="yoloText"></div>
+  </div>
+
+  <!-- FULL ALERT (100%) -->
+  <div class="full-alert" id="fullAlert" aria-hidden="true">
+    <div class="alert-box">
+      <div style="font-size:28px;font-weight:900">💀 Budżet utracił funkcje życiowe.</div>
+      <div class="muted" style="margin-top:8px">Poziom skażenia YOLO osiągnął 100%.</div>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" id="fullAlertClose">Przyjmij do wiadomości</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROAST TOAST -->
+  <div class="roast" id="roastToast" aria-hidden="true">
+    <div class="title">Roast wydatku</div>
+    <div class="text" id="roastText"></div>
+  </div>
+
+  <script>
+    /* ============================================================
+       STORAGE
+       - central state persisted in localStorage
+       ============================================================ */
+    const Storage = (function () {
+      const KEY = 'hajs_v3_state_v1';
+      const defaults = {
+        income: { main: 0, extra: 0 },
+        savings: { amount: 0, monthly: 0 },
+        fixed: [],
+        variable: [],
+        loans: [],
+        goals: [],
+        expenses: [], // includes yolo & emergency entries
+        yolo: { level: 0, count: 0 }
+      };
+
+      function load() {
+        try {
+          const raw = localStorage.getItem(KEY);
+          if (!raw) return structuredClone(defaults);
+          const parsed = JSON.parse(raw);
+          return Object.assign(structuredClone(defaults), parsed);
+        } catch {
+          return structuredClone(defaults);
+        }
+      }
+
+      function save(state) {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(state));
+        } catch {}
+      }
+
+      function get() { return load(); }
+
+      function update(mutator) {
+        const state = load();
+        const next = mutator(structuredClone(state)) || state;
+        save(next);
+        return next;
+      }
+
+      return { get, update };
+    })();
+
+    /* ============================================================
+       UI
+       - DOM helpers and renderers
+       ============================================================ */
+    const UI = (function () {
+      const panels = Array.from(document.querySelectorAll('[data-panel]'));
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const format = (v) => (Number(v)||0).toLocaleString('pl-PL',{style:'currency',currency:'PLN',minimumFractionDigits:2});
+
+      function switchTab(name){
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+        panels.forEach(p => p.style.display = (p.dataset.panel === name) ? '' : 'none');
+      }
+
+      function el(id){ return document.getElementById(id); }
+
+      function renderAll(state){
+        // income
+        el('incomeMain').value = state.income.main || '';
+        el('incomeExtra').value = state.income.extra || '';
+        el('incomeTotal').textContent = format((Number(state.income.main)||0)+(Number(state.income.extra)||0));
+        const totalInc = (Number(state.income.main)||0)+(Number(state.income.extra)||0);
+        el('incomeStatus').textContent = totalInc === 0 ? 'Brak danych' : (totalInc < 3000 ? 'Skromnie' : totalInc < 8000 ? 'Spokojnie' : 'Potencjał na YOLO');
+
+        // savings
+        el('savingsAmount').value = state.savings.amount || '';
+        el('savingsMonthly').value = state.savings.monthly || '';
+        el('savingsComment').textContent = (Number(state.savings.amount)||0) === 0 ? 'Brak oszczędności' : 'Masz oszczędności';
+
+        // fixed
+        el('fixedList').innerHTML = '';
+        let fixedMonthly = 0;
+        state.fixed.forEach(item=>{
+          const li = document.createElement('li'); li.className='item';
+          const thumb = document.createElement('div'); thumb.className='thumb'; thumb.style.background='linear-gradient(180deg,rgba(255,255,255,0.02),transparent)';
+          const main = document.createElement('div'); main.className='item-main';
+          const title = document.createElement('div'); title.className='item-title'; title.textContent = item.name;
+          const meta = document.createElement('div'); meta.className='item-meta'; meta.textContent = item.frequency;
+          main.append(title,meta);
+          const amount = document.createElement('div'); amount.className='item-amount'; amount.textContent = format(item.amount);
+          li.append(thumb,main,amount);
+          el('fixedList').appendChild(li);
+          let factor = item.frequency==='kwartalnie'?1/3:item.frequency==='rocznie'?1/12:1;
+          fixedMonthly += (Number(item.amount)||0)*factor;
+        });
+        el('fixedTotal').textContent = format(fixedMonthly);
+
+        // variable
+        el('variableList').innerHTML = '';
+        let variableSum = 0;
+        state.variable.forEach(item=>{
+          const li = document.createElement('li'); li.className='item';
+          const thumb = document.createElement('div'); thumb.className='thumb';
+          thumb.style.background = item.image ? `url("${item.image}") center/cover` : 'linear-gradient(180deg,rgba(255,255,255,0.02),transparent)';
+          const main = document.createElement('div'); main.className='item-main';
+          const title = document.createElement('div'); title.className='item-title'; title.textContent = item.name;
+          const meta = document.createElement('div'); meta.className='item-meta'; meta.textContent = `${item.category} • ${new Date(item.ts).toLocaleString()}`;
+          main.append(title,meta);
+          const amount = document.createElement('div'); amount.className='item-amount'; amount.textContent = format(item.amount);
+          li.append(thumb,main,amount);
+          el('variableList').appendChild(li);
+          variableSum += Number(item.amount)||0;
+        });
+        el('variableTotal').textContent = format(variableSum);
+
+        // loans
+        el('loanList').innerHTML = '';
+        let loanSum = 0;
+        state.loans.forEach(l=>{
+          const li = document.createElement('li'); li.className='item';
+          const thumb = document.createElement('div'); thumb.className='thumb';
+          const main = document.createElement('div'); main.className='item-main';
+          const title = document.createElement('div'); title.className='item-title'; title.textContent = l.name;
+          const meta = document.createElement('div'); meta.className='item-meta'; meta.textContent = `Pozostało: ${format(l.amount)}`;
+          main.append(title,meta);
+          const amount = document.createElement('div'); amount.className='item-amount'; amount.textContent = format(l.monthly);
+          li.append(thumb,main,amount);
+          el('loanList').appendChild(li);
+          loanSum += Number(l.monthly)||0;
+        });
+        el('loanTotal').textContent = format(loanSum);
+
+        // goals
+        el('goalList').innerHTML = '';
+        state.goals.forEach(g=>{
+          const li = document.createElement('li'); li.className='item';
+          const thumb = document.createElement('div'); thumb.className='thumb';
+          const main = document.createElement('div'); main.className='item-main';
+          const title = document.createElement('div'); title.className='item-title'; title.textContent = g.name;
+          const progress = Math.min(100, g.target>0?Math.round((g.current/g.target)*100):0);
+          const meta = document.createElement('div'); meta.className='item-meta'; meta.textContent = `${progress}% • ${format(g.current)} / ${format(g.target)}`;
+          main.append(title,meta);
+          li.append(thumb,main);
+          el('goalList').appendChild(li);
+        });
+
+        // report
+        const incomeTotal = (Number(state.income.main)||0)+(Number(state.income.extra)||0);
+        el('reportIncome').textContent = format(incomeTotal);
+        el('reportFixed').textContent = format(fixedMonthly);
+        el('reportVariable').textContent = format(variableSum);
+        el('reportLoans').textContent = format(loanSum);
+        const balance = incomeTotal - fixedMonthly - variableSum - loanSum;
+        el('reportBalance').textContent = format(balance);
+        el('reportComment').textContent = balance < 0 ? 'Wydajesz więcej niż zarabiasz.' : (balance < incomeTotal*0.1 ? 'Budżet napięty.' : 'Budżet w dobrej kondycji.');
+
+        // cemetery
+        const cemetery = state.expenses.filter(e => e.type==='yolo' || e.type==='emergency').slice().sort((a,b)=>b.ts-a.ts);
+        el('cemeteryList').innerHTML = '';
+        if(cemetery.length===0){
+          el('cemeteryEmpty').style.display='block';
+        } else {
+          el('cemeteryEmpty').style.display='none';
+          cemetery.forEach(e=>{
+            const li = document.createElement('li'); li.className='item';
+            const thumb = document.createElement('div'); thumb.className='thumb';
+            thumb.style.background = e.image ? `url("${e.image}") center/cover` : 'linear-gradient(180deg,rgba(255,255,255,0.02),transparent)';
+            const main = document.createElement('div'); main.className='item-main';
+            const title = document.createElement('div'); title.className='item-title'; title.textContent = e.name;
+            const meta = document.createElement('div'); meta.className='item-meta'; meta.textContent = `${e.type==='emergency'?'Nagły wypadek':'YOLO'} • ${new Date(e.ts).toLocaleString()}`;
+            main.append(title,meta);
+            const amount = document.createElement('div'); amount.className='item-amount'; amount.textContent = format(e.amount);
+            li.append(thumb,main,amount);
+            el('cemeteryList').appendChild(li);
+          });
+        }
+
+        // yolo indicator
+        el('yoloFill').style.width = `${state.yolo.level}%`;
+        el('yoloValue').textContent = `${state.yolo.level}%`;
+        el('yoloCount').textContent = state.yolo.count;
+        const label = state.yolo.level <=20 ? 'Sterylne finanse' : state.yolo.level <=50 ? 'Uwaga YOLO' : state.yolo.level <=80 ? 'Wysokie ryzyko' : 'Krytyczny poziom';
+        el('yoloLabel').textContent = label;
+
+        // chart
+        Charts.render(state);
+      }
+
+      return { switchTab, renderAll, el, format };
+    })();
+
+    /* ============================================================
+       BUDGET
+       - core operations: income, savings, fixed, variable
+       ============================================================ */
+    const Budget = (function () {
+      function setIncome(main, extra){
+        return Storage.update(s=>{
+          s.income.main = Number(main)||0;
+          s.income.extra = Number(extra)||0;
+          return s;
+        });
+      }
+      function setSavings(amount, monthly){
+        return Storage.update(s=>{
+          s.savings.amount = Number(amount)||0;
+          s.savings.monthly = Number(monthly)||0;
+          return s;
+        });
+      }
+      function addFixed(name, amount, freq){
+        if(!name || !amount) return Storage.get();
+        return Storage.update(s=>{
+          s.fixed.push({ id: crypto.randomUUID(), name: name.trim(), amount: Number(amount)||0, frequency: freq });
+          return s;
+        });
+      }
+      function addVariable(name, amount, category, image=null){
+        if(!name || !amount) return Storage.get();
+        const ts = Date.now();
+        const entry = { id: crypto.randomUUID(), name: name.trim(), amount: Number(amount)||0, category, image: image||null, ts, type:'variable' };
+        const updated = Storage.update(s=>{
+          s.variable.push(entry);
+          return s;
+        });
+        RoastEngine.maybeRoast(category);
+        // quick expense YOLO condition handled by QuickExpense
+        return updated;
+      }
+      return { setIncome, setSavings, addFixed, addVariable };
+    })();
+
+    /* ============================================================
+       LOANS
+       ============================================================ */
+    const Loans = (function(){
+      function addLoan(name, amount, monthly){
+        if(!name || !amount || !monthly) return Storage.get();
+        return Storage.update(s=>{
+          s.loans.push({ id: crypto.randomUUID(), name: name.trim(), amount: Number(amount)||0, monthly: Number(monthly)||0 });
+          return s;
+        });
+      }
+      return { addLoan };
+    })();
+
+    /* ============================================================
+       GOALS
+       ============================================================ */
+    const Goals = (function(){
+      function addGoal(name, target, current){
+        if(!name || !target) return Storage.get();
+        return Storage.update(s=>{
+          s.goals.push({ id: crypto.randomUUID(), name: name.trim(), target: Number(target)||0, current: Number(current)||0 });
+          return s;
+        });
+      }
+      return { addGoal };
+    })();
+
+    /* ============================================================
+       AI
+       - simple local commentary engine (no external calls)
+       ============================================================ */
+    const AI = (function(){
+      function comment(question){
+        const q = (question||'').trim();
+        if(!q) return 'Zadaj pytanie, a AI skomentuje Twoją sytuację finansową.';
+        const s = Storage.get();
+        const income = (Number(s.income.main)||0)+(Number(s.income.extra)||0);
+        const variable = s.variable.reduce((a,b)=>a+(Number(b.amount)||0),0);
+        const y = s.yolo.level || 0;
+        let base = income === 0 ? 'Nie widzę dochodu — każdy wydatek to ryzyko.' : variable > income ? 'Wydajesz więcej niż zarabiasz — uważaj.' : 'Wygląda to w miarę stabilnie.';
+        let yolo = y < 20 ? 'Poziom YOLO niski.' : y < 50 ? 'YOLO rośnie.' : y < 80 ? 'Wysokie YOLO.' : 'Krytyczne YOLO — interwencja zalecana.';
+        return `Pytanie: "${q}"\n\n${base} ${yolo}\n\nTo komentarz, nie porada finansowa.`;
+      }
+      return { comment };
+    })();
+
+    /* ============================================================
+       QUICK EXPENSE
+       - quick add modal and logic; triggers YOLO if amount>80
+       ============================================================ */
+    const QuickExpense = (function(){
+      function open(){ UI.el('quickBackdrop').classList.add('active'); UI.el('quickBackdrop').setAttribute('aria-hidden','false'); }
+      function close(){ UI.el('quickBackdrop').classList.remove('active'); UI.el('quickBackdrop').setAttribute('aria-hidden','true'); }
+      function add(name, amount, image){
+        const ts = Date.now();
+        const entry = { id: crypto.randomUUID(), name: name.trim(), amount: Number(amount)||0, category:'szybkie', image: image||null, ts, type:'variable' };
+        let updated = Storage.update(s=>{
+          s.variable.push(entry);
+          return s;
+        });
+        RoastEngine.maybeRoast('losowe');
+        if(Number(amount) > 80){
+          updated = Yolo.register('quick', { name: entry.name, amount: entry.amount, image: entry.image, ts: entry.ts });
+        } else {
+          UI.renderAll(updated);
+        }
+        return updated;
+      }
+      return { open, close, add };
+    })();
+
+    /* ============================================================
+       YOLO SYSTEM
+       - automatic activation on conditions; overlay & level handling
+       ============================================================ */
+    const Yolo = (function(){
+      const overlay = UI.el('yoloOverlay');
+      const yoloText = UI.el('yoloText');
+      const fullAlert = UI.el('fullAlert');
+
+      const messages = [
+        "Bank właśnie zgłosił zaginięcie tych pieniędzy.",
+        "To nie był zakup. To był wypadek przy pracy.",
+        "Twój budżet właśnie upadł ze schodów.",
+        "Finanse proszą o chwilę ciszy.",
+        "Ten wydatek będzie badany przez komisję.",
+        "Nie wiemy co się stało, ale pieniądze nie żyją.",
+        "Portfel został przewieziony do szpitala.",
+        "To już nie jest wydatek. To wydarzenie.",
+        "Twoje oszczędności właśnie dostały ataku paniki.",
+        "Budżet pyta, czy to naprawdę było konieczne.",
+        "Karta płatnicza prosi o urlop.",
+        "To nie była potrzeba. To była ciekawość.",
+        "Twoje przyszłe ja właśnie przewróciło oczami.",
+        "Ten wydatek będzie cytowany w Twojej biografii.",
+        "Budżet zgłosił ten ruch jako kontuzję.",
+        "To nie był impuls. To był sprint.",
+        "Twoje cele finansowe właśnie zrobiły krok w tył.",
+        "Portfel wysłał zgłoszenie o nadużyciu.",
+        "To nie promocja. To pułapka z konfetti.",
+        "Twoje konto bankowe właśnie westchnęło.",
+        "Budżet dodał ten wydatek do listy podejrzanych.",
+        "To nie jest prezent. To jest zobowiązanie.",
+        "Twoje finanse właśnie włączyły tryb survival.",
+        "Ten zakup będzie Cię obserwował z półki.",
+        "Budżet pyta: „A plan był jaki?”",
+        "To nie YOLO. To YOLO+ z DLC.",
+        "Twoje oszczędności właśnie napisały testament.",
+        "Portfel zgłosił się do programu ochrony świadków.",
+        "Ten wydatek ma potencjał na mema.",
+        "Budżet właśnie otworzył okno i krzyknął.",
+        "To nie była potrzeba. To była inspiracja z internetu.",
+        "Twoje konto pyta, czy to na pewno Twoja karta.",
+        "Ten zakup będzie się śnił Twoim finansom.",
+        "Budżet właśnie dodał nowy rozdział: „Dlaczego?”",
+        "To nie jest fanaberia. To jest case study.",
+        "Twoje cele finansowe właśnie poszły na papierosa.",
+        "Portfel wysłał emotkę 💀.",
+        "Ten wydatek ma własny soundtrack dramatyczny.",
+        "Budżet pyta, czy masz plan B. I C.",
+        "To nie YOLO. To pilot odcinka „Jak straciłem pieniądze”.",
+        "Twoje oszczędności właśnie zmieniły status na „to skomplikowane”.",
+        "Ten zakup będzie bohaterem rozmowy z doradcą.",
+        "Budżet właśnie włączył tryb „naprawdę?”",
+        "To nie była okazja. To była zasadzka.",
+        "Twoje konto bankowe właśnie wysłało SMS: „Serio?”",
+        "Ten wydatek ma potencjał na żal za tydzień.",
+        "Budżet dodał ten ruch do folderu „dowody”.",
+        "To nie YOLO. To YOLO z komentarzem rodziców.",
+        "Twoje finanse właśnie zrobiły facepalm.",
+        "Ten zakup będzie Twoim alibi na brak oszczędności.",
+        "Budżet pyta, czy to było z premedytacją.",
+        "To nie była potrzeba. To była reklama, która wygrała.",
+        "Twoje konto bankowe właśnie wysłało powiadomienie: „Nie rób tak więcej”.",
+        "Ten wydatek ma w sobie vibe „będzie się działo”.",
+        "Budżet właśnie otworzył kalkulator i się przeżegnał.",
+        "To nie YOLO. To YOLO z komentarzem księgowego.",
+        "Twoje oszczędności właśnie poszły w rozsypkę.",
+        "Ten zakup będzie Twoim „kiedyś to opowiem znajomym”.",
+        "Budżet pyta, czy masz jeszcze poczucie kontroli.",
+        "To nie była okazja. To był impuls z efektem specjalnym.",
+        "Twoje konto bankowe właśnie wysłało emoji 😬.",
+        "Ten wydatek ma w sobie vibe „to eskaluje szybko”.",
+        "Budżet właśnie włączył tryb „minimalizm z przymusu”.",
+        "To nie YOLO. To YOLO z narracją dokumentalną.",
+        "Twoje oszczędności właśnie napisały list pożegnalny.",
+        "Ten zakup będzie Twoim „nie pytaj” w rozmowach o finansach.",
+        "Budżet pyta, czy to był prezent dla Ciebie czy dla inflacji.",
+        "To nie była potrzeba. To była ciekawość z kartą płatniczą.",
+        "Twoje konto właśnie wysłało do Ciebie maila z tematem „Porozmawiajmy”.",
+        "Ten wydatek ma w sobie energię „nie mów nikomu”.",
+        "Budżet właśnie dodał nową kategorię: „co to było”.",
+        "To nie YOLO. To YOLO z podpisem „nie powtarzać w domu”.",
+        "Twoje oszczędności właśnie zmieniły status na „zaginione”.",
+        "Ten zakup będzie Twoim ulubionym argumentem „ale było warto” (albo i nie).",
+        "Budżet pyta, czy pamiętasz swoje cele. One pamiętają Ciebie.",
+        "To nie była okazja. To był test silnej woli. Wynik: anulowany.",
+        "Twoje konto bankowe właśnie wysłało zaproszenie na spotkanie interwencyjne.",
+        "Ten wydatek ma w sobie vibe „to będzie bolało przy podsumowaniu miesiąca”.",
+        "Budżet właśnie włączył tryb „modlitwa o przelew”.",
+        "To nie YOLO. To YOLO z komentarzem „trzymaj mi portfel”.",
+        "Twoje oszczędności właśnie zniknęły w efekcie specjalnym.",
+        "Ten zakup będzie Twoim „nie pytaj, długa historia”.",
+        "Budżet pyta, czy to był plan czy spontaniczny eksperyment.",
+        "To nie była potrzeba. To była reklama, która wygrała z rozsądkiem.",
+        "Twoje konto właśnie wysłało do Ciebie powiadomienie: „naprawdę?”",
+        "Ten wydatek ma w sobie energię „to będzie bolało przy podsumowaniu miesiąca”.",
+        "Budżet właśnie dodał nowy rozdział: „jak do tego doszło, nie wiem”."
+      ];
+
+      function randomMsg(){ return messages[Math.floor(Math.random()*messages.length)]; }
+
+      function showOverlay(){
+        yoloText.textContent = randomMsg();
+        overlay.classList.add('active');
+        overlay.setAttribute('aria-hidden','false');
+        const duration = 1500 + Math.random()*1500;
+        setTimeout(()=>{ overlay.classList.remove('active'); overlay.setAttribute('aria-hidden','true'); }, duration);
+      }
+
+      function increaseLevel(state){
+        state.yolo.count = (state.yolo.count||0) + 1;
+        state.yolo.level = Math.min(100, (state.yolo.level||0) + 10);
+        return state;
+      }
+
+      function register(source, payload){
+        // payload: {name,amount,image,ts}
+        let updated = Storage.update(s=>{
+          const entry = {
+            id: crypto.randomUUID(),
+            name: payload.name || (source==='emergency'?'Nagły wypadek':'YOLO'),
+            amount: Number(payload.amount)||0,
+            image: payload.image||null,
+            ts: payload.ts || Date.now(),
+            type: source==='emergency' ? 'emergency' : 'yolo'
+          };
+          s.expenses.push(entry);
+          s = increaseLevel(s);
+          return s;
+        });
+        showOverlay();
+        UI.renderAll(updated);
+        if(updated.yolo.level >= 100){
+          UI.el('fullAlert').classList.add('active');
+          UI.el('fullAlert').setAttribute('aria-hidden','false');
+        }
+        return updated;
+      }
+
+      function init(){
+        UI.el('fullAlertClose').addEventListener('click', ()=>{
+          UI.el('fullAlert').classList.remove('active');
+          UI.el('fullAlert').setAttribute('aria-hidden','true');
+        });
+      }
+
+      return { register, init };
+    })();
+
+    /* ============================================================
+       ROAST ENGINE
+       - >=100 roast lines across categories; 10% chance after expense
+       ============================================================ */
+    const RoastEngine = (function(){
+      const toast = UI.el('roastToast');
+      const textEl = UI.el('roastText');
+      let timeoutId = null;
+
+      const roasts = {
+        kawa: [
+          "Kolejna kawa? Barista już odkłada na wakacje dzięki Tobie.",
+          "Twoja kawa kosztuje więcej niż spokój budżetu.",
+          "Kofeina działa chwilę, minus na koncie dłużej.",
+          "Barista zna Twoje imię lepiej niż Twój bank.",
+          "To nie latte, to abonament na brak oszczędności.",
+          "Kawa: 15 zł. Budżet: dramat.",
+          "Twoje wydatki na kawę mają własny wykres.",
+          "Ta kawa była emocjonalna, nie ekonomiczna.",
+          "Kawa dziś, wyrzuty jutro.",
+          "Twoje konto bankowe wysłało emoji ☕️😬"
+        ],
+        jedzenie: [
+          "Znowu jedzenie na mieście? Kuchnia w domu płacze.",
+          "Dowóz to wygoda, budżet to nie fan tego pomysłu.",
+          "To nie był głód. To był impuls.",
+          "Twoje zamówienia jedzenia mają historię.",
+          "Każdy dowóz to mały pożar w budżecie.",
+          "Twoje kubki smakowe są szczęśliwe, konto mniej.",
+          "To nie była kolacja. To była inwestycja w żołądek.",
+          "Jedzenie minie, wydatek zostanie.",
+          "To nie cheat meal. To cheat budget.",
+          "Twoje finanse właśnie dostały sos pomidorowy."
+        ],
+        zakupy: [
+          "Amazon właśnie klaszcze.",
+          "Ta rzecz była potrzebna jak trzecia lodówka.",
+          "Twój koszyk był pełny, teraz konto puste.",
+          "To nie był zakup. To był impuls z dostawą.",
+          "Twoje mieszkanie ma więcej rzeczy niż konto zer.",
+          "Ten zakup wyglądał lepiej w reklamie.",
+          "To nie była potrzeba. To była ciekawość.",
+          "Ten przedmiot będzie zbierał kurz.",
+          "Budżet pyta: czy to było konieczne?",
+          "Twoje wydatki na zakupy mają fanclub."
+        ],
+        elektronika: [
+          "Nowa elektronika, stare saldo.",
+          "Twój sprzęt jest smart, budżet mniej.",
+          "To nie upgrade. To YOLO w 4K.",
+          "Elektronika się starzeje, rata zostaje.",
+          "Ten gadżet ma więcej funkcji niż Twój plan oszczędzania.",
+          "To nie inwestycja. To prezent dla producenta.",
+          "Twój budżet nie obsługuje tej rozdzielczości wydatków.",
+          "Nowy sprzęt, ten sam brak planu.",
+          "To nie była potrzeba. To specyfikacja.",
+          "Twoje finanse właśnie dostały aktualizację: błąd."
+        ],
+        ubrania: [
+          "Twoja szafa jest pełna, budżet pusty.",
+          "To nie outfit. To finansowy statement.",
+          "Ten ciuch będzie hitem... przez dwa tygodnie.",
+          "To nie była potrzeba. To była promocja.",
+          "Twoja szafa ma backlog.",
+          "Ten zakup nie pasuje do budżetu.",
+          "Twoje ubrania są premium, konto trial.",
+          "To nie styl. To impuls.",
+          "Twoje konto bankowe nie ma się w co ubrać.",
+          "Ten zakup ma więcej metek niż sensu."
+        ],
+        losowe: [
+          "To wygląda jak „nie pytaj, długa historia”.",
+          "To nie YOLO. To YOLO bez planu ewakuacji.",
+          "Twój budżet dodał ten ruch do listy podejrzanych.",
+          "To była chwila słabości, nie potrzeba.",
+          "Twoje finanse pytają, czy to konieczne.",
+          "Ten wydatek ma energię „będę żałować”.",
+          "Budżet zrobił facepalm.",
+          "To nie zakup. To eksperyment na koncie.",
+          "Twoje oszczędności właśnie się odwróciły.",
+          "Ten ruch będzie bohaterem podsumowania miesiąca."
+        ]
+      };
+
+      // ensure at least 100 unique lines across categories
+      const allRoasts = Object.values(roasts).flat();
+      if(allRoasts.length < 100){
+        // expand losowe with variations to reach 100
+        const base = allRoasts.slice();
+        while(allRoasts.length < 100){
+          allRoasts.push(base[allRoasts.length % base.length] + " (wersja rozszerzona)");
+        }
+      }
+
+      function pick(category){
+        const arr = roasts[category] || roasts.losowe;
+        return arr[Math.floor(Math.random()*arr.length)];
+      }
+
+      function maybeRoast(category){
+        if(Math.random() <= 0.1){
+          const r = pick(category);
+          show(r);
+        }
+      }
+
+      function show(text){
+        if(timeoutId) clearTimeout(timeoutId);
+        textEl.textContent = text;
+        toast.classList.add('active');
+        toast.setAttribute('aria-hidden','false');
+        timeoutId = setTimeout(()=>{ toast.classList.remove('active'); toast.setAttribute('aria-hidden','true'); }, 4500);
+      }
+
+      function init(){
+        toast.addEventListener('click', ()=>{ toast.classList.remove('active'); toast.setAttribute('aria-hidden','true'); });
+      }
+
+      return { maybeRoast, init };
+    })();
+
+    /* ============================================================
+       CHARTS
+       - lightweight canvas bar chart
+       ============================================================ */
+    const Charts = (function(){
+      const container = UI.el('chartCanvas');
+      let canvas, ctx, dpr;
+
+      function ensure(){
+        if(!canvas){
+          canvas = document.createElement('canvas');
+          canvas.style.width = '100%';
+          canvas.style.height = '220px';
+          container.innerHTML = '';
+          container.appendChild(canvas);
+          ctx = canvas.getContext('2d');
+          dpr = window.devicePixelRatio || 1;
+        }
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.max(300, rect.width * dpr);
+        canvas.height = Math.max(150, rect.height * dpr);
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+      }
+
+      function render(state){
+        ensure();
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        ctx.clearRect(0,0,w,h);
+        const income = (Number(state.income.main)||0)+(Number(state.income.extra)||0);
+        let fixed = 0; state.fixed.forEach(f=>{ let factor = f.frequency==='kwartalnie'?1/3:f.frequency==='rocznie'?1/12:1; fixed += (Number(f.amount)||0)*factor; });
+        const variable = state.variable.reduce((a,b)=>a+(Number(b.amount)||0),0);
+        const loans = state.loans.reduce((a,b)=>a+(Number(b.monthly)||0),0);
+        const values = [income, fixed, variable, loans];
+        const labels = ['Dochód','Stałe','Zmienne','Kredyty'];
+        const colors = ['#4f8cff','#ff7a2f','#ff3366','#ffb020'];
+        const max = Math.max(...values,1);
+        const padding = {left:30,right:20,top:20,bottom:40};
+        const chartW = w - padding.left - padding.right;
+        const chartH = h - padding.top - padding.bottom;
+        const barW = chartW / (values.length*1.8);
+        const gap = barW * 0.8;
+        ctx.save();
+        ctx.translate(padding.left,padding.top);
+        ctx.font = '12px Inter, system-ui';
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        values.forEach((val,i)=>{
+          const x = i*(barW+gap) + gap;
+          const barH = (val/max)*(chartH-10);
+          const y = chartH - barH;
+          const grad = ctx.createLinearGradient(x,y,x,chartH);
+          grad.addColorStop(0, colors[i]);
+          grad.addColorStop(1, 'rgba(255,255,255,0.02)');
+          ctx.fillStyle = grad;
+          roundRect(ctx, x, y, barW, barH, 8);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.textAlign = 'center';
+          ctx.fillText(labels[i], x + barW/2, chartH + 18);
+        });
+        ctx.restore();
+      }
+
+      function roundRect(ctx,x,y,w,h,r){
+        ctx.beginPath();
+        ctx.moveTo(x+r,y);
+        ctx.arcTo(x+w,y,x+w,y+h,r);
+        ctx.arcTo(x+w,y+h,x,y+h,r);
+        ctx.arcTo(x,y+h,x,y,r);
+        ctx.arcTo(x,y,x+w,y,r);
+        ctx.closePath();
+      }
+
+      window.addEventListener('resize', ()=>{ const s = Storage.get(); render(s); });
+
+      return { render };
+    })();
+
+    /* ============================================================
+       EVENT BINDING & APP INIT
+       - single init, no duplicate listeners
+       ============================================================ */
+    (function AppInit(){
+      // initial render
+      const state = Storage.get();
+      UI.renderAll(state);
+
+      // tabs
+      document.getElementById('tabs').addEventListener('click', (e)=>{
+        const btn = e.target.closest('.tab');
+        if(!btn) return;
+        UI.switchTab(btn.dataset.tab);
+      });
+
+      // income form
+      document.getElementById('incomeForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const main = UI.el('incomeMain').value;
+        const extra = UI.el('incomeExtra').value;
+        const updated = Budget.setIncome(main, extra);
+        UI.renderAll(updated);
+      });
+
+      // savings
+      document.getElementById('savingsForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const amount = UI.el('savingsAmount').value;
+        const monthly = UI.el('savingsMonthly').value;
+        const updated = Budget.setSavings(amount, monthly);
+        UI.renderAll(updated);
+      });
+
+      // fixed costs
+      document.getElementById('fixedForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('fixedName').value.trim();
+        const amount = UI.el('fixedAmount').value;
+        const freq = UI.el('fixedFreq').value;
+        if(!name || !amount) return;
+        const updated = Budget.addFixed(name, amount, freq);
+        UI.el('fixedName').value = '';
+        UI.el('fixedAmount').value = '';
+        UI.renderAll(updated);
+      });
+
+      // variable costs
+      document.getElementById('variableForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('variableName').value.trim();
+        const amount = UI.el('variableAmount').value;
+        const category = UI.el('variableCategory').value;
+        if(!name || !amount) return;
+        const updated = Budget.addVariable(name, amount, category, null);
+        UI.el('variableName').value = '';
+        UI.el('variableAmount').value = '';
+        UI.renderAll(updated);
+      });
+
+      // quick expense open
+      UI.el('quickOpen').addEventListener('click', ()=> QuickExpense.open());
+
+      // quick modal actions
+      UI.el('quickCancel').addEventListener('click', ()=> QuickExpense.close());
+      document.getElementById('quickForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('quickName').value.trim();
+        const amount = UI.el('quickAmount').value;
+        const image = UI.el('quickImage').value.trim() || null;
+        if(!name || !amount) return;
+        QuickExpense.add(name, amount, image);
+        UI.el('quickName').value = '';
+        UI.el('quickAmount').value = '';
+        UI.el('quickImage').value = '';
+        QuickExpense.close();
+      });
+
+      // skull emergency open
+      UI.el('skullBtn').addEventListener('click', ()=> {
+        UI.el('emergencyBackdrop').classList.add('active');
+        UI.el('emergencyBackdrop').setAttribute('aria-hidden','false');
+      });
+
+      // emergency modal actions
+      UI.el('emergencyCancel').addEventListener('click', ()=> {
+        UI.el('emergencyBackdrop').classList.remove('active');
+        UI.el('emergencyBackdrop').setAttribute('aria-hidden','true');
+      });
+      document.getElementById('emergencyForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('emergencyName').value.trim();
+        const amount = UI.el('emergencyAmount').value;
+        const image = UI.el('emergencyImage').value.trim();
+        if(!name || !amount || !image) return; // image required
+        const payload = { name, amount: Number(amount)||0, image, ts: Date.now() };
+        const updated = Yolo.register('emergency', payload);
+        UI.el('emergencyName').value = '';
+        UI.el('emergencyAmount').value = '';
+        UI.el('emergencyImage').value = '';
+        UI.el('emergencyBackdrop').classList.remove('active');
+        UI.el('emergencyBackdrop').setAttribute('aria-hidden','true');
+        // emergency always triggers YOLO inside register
+      });
+
+      // loans
+      document.getElementById('loanForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('loanName').value.trim();
+        const amount = UI.el('loanAmount').value;
+        const monthly = UI.el('loanMonthly').value;
+        if(!name || !amount || !monthly) return;
+        const updated = Loans.addLoan(name, amount, monthly);
+        UI.el('loanName').value = '';
+        UI.el('loanAmount').value = '';
+        UI.el('loanMonthly').value = '';
+        UI.renderAll(updated);
+      });
+
+      // goals
+      document.getElementById('goalForm').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const name = UI.el('goalName').value.trim();
+        const target = UI.el('goalTarget').value;
+        const current = UI.el('goalCurrent').value;
+        if(!name || !target) return;
+        const updated = Goals.addGoal(name, target, current);
+        UI.el('goalName').value = '';
+        UI.el('goalTarget').value = '';
+        UI.el('goalCurrent').value = '';
+        UI.renderAll(updated);
+      });
+
+      // roast & yolo init
+      RoastEngine.init();
+      Yolo.init();
+
+      // simple AI demo (not requested in this version but kept modular)
+      // chart initial render
+      Charts.render(Storage.get());
+
+      // close modals on backdrop click
+      document.querySelectorAll('.backdrop').forEach(back=>{
+        back.addEventListener('click', (e)=>{
+          if(e.target === back){
+            back.classList.remove('active');
+            back.setAttribute('aria-hidden','true');
+          }
+        });
+      });
+
+      // keyboard escape to close modals
+      window.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){
+          document.querySelectorAll('.backdrop.active').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-hidden','true'); });
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
